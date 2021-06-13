@@ -17,7 +17,7 @@ Google's [Core Web Vitals](https://web.dev/vitals/) are a set of three metrics t
 * Non-AMP content with good Core Web Vitals is eligible to appear in the mobile Top Stories feature in Search: [Official Google Announcement](https://developers.google.com/search/blog/2020/11/timing-for-page-experience?hl=en)
 
 
-## How does the Core Web Vitals Optimizer Work?
+## How does the Core Web Vitals Optimizer work?
 
 The Core Web Vitals Optimizer combines a free tool and a proven workflow:
 
