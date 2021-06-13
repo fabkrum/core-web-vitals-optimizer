@@ -25,7 +25,7 @@ The Core Web Vitals Optimizer combines a free tool and a proven workflow:
 * A workflow which lets you set the right priorities
 * Audit checklist with links to 50+ free how-to article & videos to detect and fix issues
 * Verify your hypotheses quickly with Cloudflare Workers
-* Monitor everything with Webpagetests (optional / [](https://product.webpagetest.org/api))
+* Monitor everything with Webpagetest (optional / [Get a Webpagetest API Key](https://product.webpagetest.org/api))
 
 
 ## Who is the Core Web Vitals Optimizer for?
@@ -34,8 +34,7 @@ The Core Web Vitals Optimizer combines a free tool and a proven workflow:
 * Experienced Frontend Developers
 * Everybody who wants to learn about how to optimize Web Performance
 
-Netcentric has a team of dedicated web performance experts and offers professional Core Web Vitals optimization services based on this tool and workflow.
-[Professional Services](https://www.cwv-optimizer.com/services)
+Netcentric has a team of dedicated web performance experts and offers [professional Core Web Vitals optimization services](https://www.cwv-optimizer.com/services) based on this tool and workflow.
 
 
 ## More information
