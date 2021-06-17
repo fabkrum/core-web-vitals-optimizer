@@ -1,14 +1,21 @@
 # Ignore installed npm modules
 /website/node_modules/
 
-# Ignore API documentation
-api-docs/
-
 # Ignore folders from source code editors
 .vscode
 .idea
 
 # Ignore eleventy output when doing manuell tests
-/website/_site/
-
 /website/package-lock.json
+/website/_site/
+/website/_cache/
+
+*/.DS_Store
+.DS_Store
+.env
+
+# Local Netlify folder
+/website/.netlify
+
+# Lighthouse CI reports
+/website/.lighthouseci/
