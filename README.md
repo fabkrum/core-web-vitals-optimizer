@@ -2,20 +2,18 @@
 
 ## What are the Core Web Vitals?
 
-Google's [Core Web Vitals](https://web.dev/vitals/) are a set of three metrics to measure the user experience of web sites:
+Google's [Core Web Vitals](https://web.dev/vitals/) are a set of metrics to measure the user experience of web sites:
 * Loading: [Largest Contentful Paint (LCP)](https://web.dev/lcp/)
 * Interactivity: [First Input Delay (FID)](https://web.dev/fid/)
 * Visual stability: [Cumulative Layout Shift (CLS)](https://web.dev/cls/)
 
-[More Core Web Vitals resources](https://www.cwv-optimizer.com/resources)
+[Learn more about the Core Web Vitals](https://www.cwv-optimizer.com/resources)
 
 
 ## What are the benefits of having good Core Web Vitals?
 
 * A fast loading website with a good user experience has a positive impact on user engagement and conversions: [WPO stasts](https://wpostats.com/tags/core%20web%20vitals/)
 * The Core Web Vitals are a search ranking factor in the Google mobile search since June 2021: [Official Google Announcement](https://developers.google.com/search/blog/2020/11/timing-for-page-experience?hl=en)
-* Non-AMP content with good Core Web Vitals is eligible to appear in the mobile Top Stories feature in Search: [Official Google Announcement](https://developers.google.com/search/blog/2020/11/timing-for-page-experience?hl=en)
-
 
 ## How does the Core Web Vitals Optimizer work?
 
