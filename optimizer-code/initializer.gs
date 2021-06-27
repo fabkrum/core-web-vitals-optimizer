@@ -11,9 +11,9 @@ function addMenu() {
 
   ui.createMenu('CrUX Pages')
     .addSubMenu(ui.createMenu('Pages')
-      .addItem('Create/Update CrUX Pages', 'initPages')
-      .addItem('Continue with last URL in sheet', 'initNextPages')
-      .addItem('Update Page data in sheet', 'initUpdatePages')
+      .addItem('Create CrUX Pages', 'initPages')
+      .addItem('Continue creating CrUX Pages', 'initNextPages')
+      .addItem('Update CrUX Pages data', 'initUpdatePages')
       .addItem('Create audits for marked pages', 'initPagesAuditSheets'))
     .addSubMenu(ui.createMenu('Page Groups')
       .addItem('Create/Update Page Groups', 'initPageGroups')
@@ -25,19 +25,36 @@ function addMenu() {
       .addItem('Cached URLs', 'initDeleteCache'))
     .addToUi();
 
-    log('Updated menu');
+    log('Updated menu', true);
 }
-
-//addMenu();
-//initPagesAuditSheets();
-//reset(['audits']);
-//initRecommendPageGroupAudits();
-//initPageGroups();
-//initPageGroupsAuditSheets();
 
 /**
  * Functions which are triggered by menu actions
- */
+ * */
+ 
+function onEdit(e) {
+  const sheet = e.range.getSheet();
+  const name = sheet.getName();    
+  var color = '';
+
+  // Audit status was updated - update sheet color
+  if (e.range.getA1Notation() === CONFIG.RANGE.AUDIT_STATUS) {
+    if (name.includes(CONFIG.DEFAULT.PAGE_AUDIT_NAME) || name.includes(CONFIG.DEFAULT.PAGE_GROUP_AUDIT_NAME)) {
+      color = e.range.getBackgrounds();
+      setTabColor(sheet, color);
+    }      
+  }
+}
+
+// Color the sheet based on the audit status
+function setTabColor(auditSheet, color) {
+  if (!color) {
+    color = CONFIG.DEFAULT.AUDIT_STATUS_COLOR;
+  }
+
+  auditSheet.setTabColor(color);    
+  log('Audit Status changed - tab sheet color updated.', true)
+}
 
 function initDeleteCache() {
   deleteCache();
@@ -71,14 +88,12 @@ function initPageGroups() {
   object.run();
 }
 
-
 function initRecommendPageGroupAudits() {
   var object = pageGroupsObject();
 
   log('Menu: Create/Update Page Groups', true);
   object.recommendAudits();
 }
-
 
 function initOrigins() {
   var object = originsObject();
@@ -113,17 +128,24 @@ function initAuditCruxPanelUpdate() {
 }
 
 function initWptWorkerTest() {
-  var object = wptObject();
+  var object = wptObject('worker');
 
   log('Button: Test worker url with WPT', true);
-  object.run('worker');
+  object.run();
 }
 
-function initWptPageTest() {
+function initWptOriginalTest() {
+  var object = wptObject('original');
+
+  log('Button: Test page url with WPT', true);
+  object.run();
+}
+
+function initWptDeleteSelectedTests() {
   var object = wptObject();
 
   log('Button: Test page url with WPT', true);
-  object.run('page');
+  object.deleteSelectedTests();
 }
 
 /**
@@ -146,13 +168,24 @@ function getAverage(values) {
   var length = values.length;
   var sum = 0;
   var average;
+  var divider = 0;
+  var value = '';
+  var float = 0;
 
   if (length) {
     for (var i = 0; i < length; i++) {
-       sum += parseFloat(values[i], 10);      
+      value = values[i];
+      float = parseFloat(value, 10);
+
+      if (isNaN(float)) {
+        continue;
+      }
+
+      sum += float;
+      divider++;
     }
 
-    average = sum / length;
+    average = sum / divider;
 
     return average;
   } else {
@@ -182,6 +215,8 @@ function updateColumnFormat(sheet, fcpColumn, lcpColumn, fidColumn, clsColumn, f
       range.setBackground('#' + CONFIG.CWV.COLOR_POOR);
     } else if(average !== 0) {
       range.setBackground('#' + CONFIG.CWV.COLOR_NEEDS_IMPROVEMENT);  
+    } else {
+      range.setBackground('#' + CONFIG.CWV.COLOR_NEUTRAL);  
     }
   });
 }  
