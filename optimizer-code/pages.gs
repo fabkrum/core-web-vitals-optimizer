@@ -391,7 +391,7 @@ function pagesObject(mode) {
     const fcp = args[5];
     const lcp = args[9];
     const fid = args[13];
-    const cls = args[17];    
+    const cls = args[17];
     const row = [
       '',
       Utilities.formatDate(new Date(), CONFIG.SETTINGS.TIMEZONE, CONFIG.SETTINGS.DATEFORMAT),
@@ -455,7 +455,7 @@ function pagesObject(mode) {
           fcp.good, fcp.ni, fcp.poor, fcp.p75,
           lcp.good, lcp.ni, lcp.poor, lcp.p75,
           fid.good, fid.ni, fid.poor, fid.p75,
-          cls.good, cls.ni, cls.poor, cls.p75);
+          cls.good, cls.ni, cls.poor, parseFloat(cls.p75));
   }
 
   function callAPI(request) {
