@@ -48,17 +48,12 @@ function auditSheetObject(globalType) {
           setPageData(data, auditSheet);
           
           if (globalType === 'pages') {
-            // Set the sheet tab color to the worst metric
             updateDataSheet(data['url'], auditSheet);
-            Logger.log('Get the CrUX data and update sheet: ' + data['url']);
-          }
+            clearTrends(auditSheet);
 
-          if (CONFIG.SETTINGS.WPT_USER_CONSENT === true) {
-            // TODO: WPT width Cookie Layer and without
-          } else {
-            // TODO WPT Only Desktop and Mobile
+            log('CrUX widget is updated: ' + data['url']);
           }
-
+          
           // Make the new audit sheet visible
           auditSheet.showSheet();
           Logger.log('Show sheet: ' + name);
@@ -70,6 +65,86 @@ function auditSheetObject(globalType) {
         Logger.log('No sheet was created for: ' + data['url']);
       }
     }
+  }
+
+  // Copy & Paste values from the CrUX table and settings
+  function setPageData(data, auditSheet) {      
+    auditSheet.getRange(CONFIG.RANGE.AUDIT_URL).setValue(data['url']);
+    auditSheet.getRange(CONFIG.RANGE.AUDIT_WORKER_URL).setValue(CONFIG.SETTINGS.WORKER_URL);
+  }
+
+  function clearTrends(auditSheet) {
+    const range = auditSheet.getRange(CONFIG.RANGE.AUDIT_CRUX_WIDGET_TRENDS);
+
+    range.clearContent();
+  }
+
+  // Create a new audit sheet
+  function createAuditSheet(id, name, url) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    var newSheet = '';
+    var template = CONFIG.SHEET.TEMPLATE_AUDIT;
+    var reference = [];
+    var buttons = [];
+    var range = null;
+
+    if (globalType === 'pageGroup') 
+    
+    template = '';
+
+    // Template not found  
+    if (!template || ss.getSheetByName(template) === null) {
+      log('Audit Template is missing: ' + template, true);
+      return false;
+    }
+
+    // Copy template sheet and create a new sheet
+    newSheet = ss.getSheetByName(template).copyTo(ss);
+
+    reference.push(id, name, url, newSheet.getSheetId());
+    
+    // Save new audit sheet in reference table
+    globalReferenceSheet.appendRow(reference);
+
+    // Save new audit sheet in reference array
+    globalReferences.push(reference);
+  
+    // Set the name of the new sheet
+    newSheet.setName(name);
+
+    // Remove the CrUX widget for Page Groups
+    if (globalType === 'pageGroups') {      
+      range = newSheet.getRange(CONFIG.RANGE.AUDIT_CRUX_WIDGET);
+      range.clearFormat();
+      range.clearContent();
+
+      // Remove the CrUX widget update button
+      buttons = newSheet.getDrawings();
+      buttons[3].remove();      
+    }
+
+    // Adapt the WPT table
+    if (isWpt()) {
+      // Remove User Consent tables
+      if (!isUserConsent()) {
+        newSheet.deleteColumns(35,28);
+      }
+    
+    // Remove WPT table
+    } else {
+      // Remove table
+      newSheet.deleteRows(9, 10);
+
+      // Remove the WPT buttons
+      buttons = newSheet.getDrawings();
+      buttons[0].remove();
+      buttons[1].remove();
+      buttons[2].remove();
+    }
+
+    SpreadsheetApp.flush();
+  
+    return newSheet;
   }
 
   // Find the first available id
@@ -129,24 +204,24 @@ function auditSheetObject(globalType) {
 
     switch(formFactor) {
       case 'PHONE':
-        rangeHeader = auditSheet.getRange('M4'); 
-        rangeData = auditSheet.getRange('M6:P6');
-        dataCells = ['M6', 'N6', 'O6', 'P6'];      
-        rangeDiffs = auditSheet.getRange('M7:P7');
+        rangeHeader = auditSheet.getRange('L4'); 
+        rangeData = auditSheet.getRange('L6:O6');
+        dataCells = ['L6', 'M6', 'N6', 'O6'];      
+        rangeDiffs = auditSheet.getRange('L7:O7');
         Logger.log('Phone is updated');
         break;
       case 'DESKTOP':
-        rangeHeader = auditSheet.getRange('Q4'); 
-        rangeData = auditSheet.getRange('Q6:T6');
-        dataCells = ['Q6', 'R6', 'S6', 'T6'];
-        rangeDiffs = auditSheet.getRange('Q7:T7');
+        rangeHeader = auditSheet.getRange('P4'); 
+        rangeData = auditSheet.getRange('P6:S6');
+        dataCells = ['P6', 'Q6', 'R6', 'S6'];
+        rangeDiffs = auditSheet.getRange('P7:S7');
         Logger.log('Desktop is updated');
         break;
       case 'ALL_FORM_FACTORS':
-        rangeHeader = auditSheet.getRange('U4'); 
-        rangeData = auditSheet.getRange('U6:X6');
-        dataCells = ['U6', 'V6', 'W6', 'X6'];
-        rangeDiffs = auditSheet.getRange('U7:X7');
+        rangeHeader = auditSheet.getRange('T4'); 
+        rangeData = auditSheet.getRange('T6:W6');
+        dataCells = ['T6', 'U6', 'V6', 'W6'];
+        rangeDiffs = auditSheet.getRange('T7:W7');
         Logger.log('All Form Factors are updated');
         break;          
     }
@@ -194,9 +269,11 @@ function auditSheetObject(globalType) {
       } else if (metric > poor) {
         range.setBackground('#' + CONFIG.CWV.TABLE_COLOR_POOR);
         status.push(CONFIG.CWV.POOR);
-      } else if (metric !== 0) {
+      } else if (metric > good && metric <= poor) {
         range.setBackground('#' + CONFIG.CWV.TABLE_COLOR_NEEDS_IMPROVEMENT);
         status.push(CONFIG.CWV.NEEDS_IMPROVEMENT);
+      } else {
+        range.setBackground('#ffffff');
       }
     });
 
@@ -210,31 +287,26 @@ function auditSheetObject(globalType) {
     }
 
     SpreadsheetApp.flush();
-    Logger.log('Colors in CrUX Panel is updated');
+    Logger.log('Colors in CrUX Panel are updated');
   }
 
   function getDiffs(newData, oldData) {
-    var diffs = [[]];    
+    var diffs = [[]];
+    var oldValue = 0;
+    var newValue = 0;
 
-    for (var i = 0; i < newData[0].length; i++) {      
-      diffs[0][i] = parseFloat(oldData[0][i]) - parseFloat(newData[0][i]);
+    for (var i = 0; i < newData[0].length; i++) {
+      oldValue = parseFloat(oldData[0][i]);
+      newValue = parseFloat(newData[0][i]);
+
+      if (!isNaN(oldValue) && !isNaN(newValue)) {
+        diffs[0][i] = oldValue - newValue;
+      } else {
+        diffs[0][i] = '–';
+      }      
     }
 
     return diffs;
-  }
-
-  // Color the sheet based on the worst metric
-  function setTabColor(auditSheet) {
-    const colors = auditSheet.getRange('L4:W4').getBackgrounds();
-    
-    if (colors[0].includes('#' + CONFIG.CWV.COLOR_POOR)) {
-      auditSheet.setTabColor(CONFIG.CWV.COLOR_POOR);
-    } else if (colors[0].includes('#' + CONFIG.CWV.COLOR_NEEDS_IMPROVEMENT)) {
-      auditSheet.setTabColor(CONFIG.CWV.COLOR_NEEDS_IMPROVEMENT);
-    } else if (colors[0].includes('#' + CONFIG.CWV.COLOR_GOOD)) {
-      auditSheet.setTabColor(CONFIG.CWV.COLOR_GOOD);
-    }
-    Logger.log('Tab sheet color is updated.')
   }
 
   function getAuditNameByUrl(url) {
@@ -276,7 +348,7 @@ function auditSheetObject(globalType) {
 
     cell.clearDataValidations();
     cell.setHorizontalAlignment('center');
-    cell.setValue(`=HYPERLINK("#gid=${auditSheetId}", "${name}")`);
+    cell.setValue(`=HYPERLINK("#gid=${auditSheetId}"; "${name}")`);
   }
 
   function updateReferences() {
@@ -344,58 +416,6 @@ function auditSheetObject(globalType) {
     return data;
   }
 
-  // Create a new audit sheet
-  function createAuditSheet(id, name, url) {
-    const template = CONFIG.SHEET.TEMPLATE_AUDIT;
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    var newSheet = '';    
-    var reference = [];
-    var buttons = [];
-    var range = null;
-
-
-    // Template not found  
-    if (!template || ss.getSheetByName(template) === null) {
-      Logger.log('Template is missing');
-      return false;
-    }   
-
-    // Copy template sheet and create a new sheet
-    newSheet = ss.getSheetByName(template).copyTo(ss);
-
-    reference.push(id, name, url, newSheet.getSheetId());
-    
-    // Save new audit sheet in reference table   
-    globalReferenceSheet.appendRow(reference);
-
-    // Save new audit sheet in reference array
-    globalReferences.push(reference);
-  
-    // Set the name of the new sheet
-    newSheet.setName(name);
-
-    // Remove the CrUX widget for Page Groups
-    if (globalType === 'pageGroups') {      
-      range = newSheet.getRange(CONFIG.RANGE.AUDIT_CRUX_WIDGET);
-      range.clearFormat();
-      range.clearContent();
-
-      // Remove the CrUX widget update button
-      buttons = newSheet.getDrawings();
-      buttons[3].remove();      
-    }
-
-    SpreadsheetApp.flush();
-  
-    return newSheet;
-  }
-
-  // Copy & Paste values from the CrUX table and settings
-  function setPageData(data, auditSheet) {      
-    auditSheet.getRange(CONFIG.RANGE.AUDIT_URL).setValue(data['url']);
-    auditSheet.getRange(CONFIG.RANGE.AUDIT_WORKER_URL).setValue(CONFIG.SETTINGS.WORKER_URL);
-  }
-
   function getCrUXData(key, value, formFactor, auditSheet) {
     const response = callAPI({
       [key]: value,
@@ -415,7 +435,7 @@ function auditSheetObject(globalType) {
           fcp.good, fcp.ni, fcp.poor, fcp.p75,
           lcp.good, lcp.ni, lcp.poor, lcp.p75,
           fid.good, fid.ni, fid.poor, fid.p75,
-          cls.good, cls.ni, cls.poor, cls.p75,
+          cls.good, cls.ni, cls.poor, parseFloat(cls.p75),
           auditSheet);
   }
 
