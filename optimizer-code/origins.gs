@@ -81,7 +81,7 @@ function originsObject() {
           fcp.good, fcp.ni, fcp.poor, fcp.p75,
           lcp.good, lcp.ni, lcp.poor, lcp.p75,
           fid.good, fid.ni, fid.poor, fid.p75,
-          cls.good, cls.ni, cls.poor, cls.p75);
+          cls.good, cls.ni, cls.poor, parseFloat(cls.p75));
   }
 
   function callAPI(request) {
