@@ -17,6 +17,7 @@ CONFIG.SETTINGS = {};
 CONFIG.DEFAULT.FORM_FACTOR = 'ALL_FORM_FACTORS';
 CONFIG.DEFAULT.PAGE_AUDIT_NAME = 'Page Audit';
 CONFIG.DEFAULT.PAGE_GROUP_AUDIT_NAME = 'PG Audit';
+CONFIG.DEFAULT.WPT_URL = 'https://www.webpagetest.org/runtest.php';
 
  // Format: https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html
 CONFIG.DEFAULT.TIMEZONE = 'GMT+2';
@@ -28,6 +29,7 @@ CONFIG.DEFAULT.CRUX_API_TIMEOUT = 250;
 CONFIG.DEFAULT.CRUX_API_TIME = 350;
 CONFIG.DEFAULT.CRUX_CACHE_TIME = 2700; // Cache sitemaps and urls for 45m
 CONFIG.DEFAULT.CRUX_ALL_FORM_FACTORS = ['PHONE', 'DESKTOP', 'ALL_FORM_FACTORS'];
+CONFIG.DEFAULT.AUDIT_STATUS_COLOR = 'ea4335';
 
 /** 
  * ====================================================================================================================================
@@ -66,9 +68,11 @@ CONFIG.CWV.POOR = 'Poor';
 CONFIG.CWV.COLOR_GOOD = '0cce6b';
 CONFIG.CWV.COLOR_NEEDS_IMPROVEMENT = 'ffa400';
 CONFIG.CWV.COLOR_POOR = 'ff4e42';
+CONFIG.CWV.COLOR_NEUTRAL = '000000';
 CONFIG.CWV.TABLE_COLOR_GOOD = 'd9ead3';
 CONFIG.CWV.TABLE_COLOR_NEEDS_IMPROVEMENT = 'fff2cc';
 CONFIG.CWV.TABLE_COLOR_POOR = 'f4cccc';
+CONFIG.CWV.TABLE_COLOR_NEUTRAL = '000000';
 
 /** 
  * ====================================================================================================================================
@@ -86,7 +90,6 @@ CONFIG.SHEET.TEMPLATE_AUDIT = '{Template Audit}';
 CONFIG.SHEET.TEMPLATE_PAGES = '{Template Pages}';
 CONFIG.SHEET.TEMPLATE_PAGE_GROUPS = '{Template Page Groups}';
 CONFIG.SHEET.TEMPLATE_ORIGINS = '{Template Origins}';
-CONFIG.SHEET.TEMPLATE_WPT = '{Template WPT}';
 CONFIG.SHEET.CACHE_URLS = '[Cache URLs]';
 CONFIG.SHEET.CACHE_LAST_URL = '[Cache Last URL]';
 
@@ -111,6 +114,8 @@ CONFIG.RANGE_BY_NAME.AUDIT_CONDITIONS_NEEDS_IMPROVEMENT = 'ConfigAuditConditionN
 CONFIG.RANGE_BY_NAME.AUDIT_CONDITIONS_GOOD = 'ConfigAuditConditionGood';
 
 // WebPageTest Configuration
+CONFIG.RANGE_BY_NAME.WPT_IS_ACTIVE = 'ConfigWptIsActive';
+CONFIG.RANGE_BY_NAME.WPT_USER_CONSENT = 'ConfigWptUserConsent';
 CONFIG.RANGE_BY_NAME.WPT_LOCATION = 'ConfigWptLocation';
 CONFIG.RANGE_BY_NAME.WPT_MOBILE_CONNECTION = 'ConfigWptMobileConnection';
 CONFIG.RANGE_BY_NAME.WPT_MOBILE_BROWSER = 'ConfigWptMobileBrowser';
@@ -130,7 +135,6 @@ CONFIG.RANGE_BY_NAME.WPT_SAVE_REQUEST_BODIES = 'ConfigWptSaveResponseBodies';
 CONFIG.RANGE_BY_NAME.WPT_FULL_SIZE_VIDEO = 'ConfigWptFullSizeVideo';
 CONFIG.RANGE_BY_NAME.WPT_JS_TRACE = 'ConfigWptJsTrace';
 CONFIG.RANGE_BY_NAME.WPT_NETWORK_TRACE = 'ConfigWptNetworkTrace';
-CONFIG.RANGE_BY_NAME.WPT_USER_CONSENT = 'ConfigWptUserConsent';
 CONFIG.RANGE_BY_NAME.WPT_CALCULATOR = 'ConfigWptCalc';
 
 // Worker Configuration
@@ -138,13 +142,14 @@ CONFIG.RANGE_BY_NAME.WORKER_URL = 'ConfigWorkerUrl';
 
 // Audits
 CONFIG.RANGE.AUDIT_WPT_FIRST_ROW = 'A12:BJ12';
-CONFIG.RANGE.AUDIT_URL = 'E1';
+CONFIG.RANGE.AUDIT_URL = 'D1';
 CONFIG.RANGE.AUDIT_WORKER_URL = 'D5';
 CONFIG.RANGE.AUDIT_UPDATE_DATE = 'K6';
 CONFIG.RANGE.AUDIT_CRUX_WIDGET = 'K3:X7';
-CONFIG.RANGE.AUDIT_CRUX_WIDGET_DATA = 'M6:X6';
-CONFIG.RANGE.AUDIT_CRUX_WIDGET_TRENDS = 'M7:X7';
-CONFIG.RANGE.AUDIT_WITHOUT_USER_CONSENT = 'AI:BJ'; 
+CONFIG.RANGE.AUDIT_CRUX_WIDGET_DATA = 'L6:W6';
+CONFIG.RANGE.AUDIT_CRUX_WIDGET_TRENDS = 'L7:W7';
+CONFIG.RANGE.AUDIT_WITHOUT_USER_CONSENT = 'AI:BI';
+CONFIG.RANGE.AUDIT_NEXT_ROW = 'A11';
 
 // Pages
 CONFIG.RANGE.PAGES_DATA = 'A3:U';
@@ -170,6 +175,9 @@ CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_TESTS_LEFT = 'CacheLastUrlTestsLeft';
 
 // Audit References
 CONFIG.RANGE.REFERENCE_AUDIT = 'A3:D';
+CONFIG.RANGE.AUDIT_STATUS = 'A1';
+CONFIG.RANGE.AUDIT_WPT_FIRST_ROW = '12';
+
 
 /** 
  * ====================================================================================================================================
@@ -188,14 +196,71 @@ function setConfiguration() {
   CONFIG.SETTINGS.URLS = getConfigData(sheet.getRange(CONFIG.RANGE.URLS).getValues());
   CONFIG.SETTINGS.PAGE_GROUPS = getConfigData(sheet.getRange(CONFIG.RANGE.PAGE_GROUPS).getValues());
   CONFIG.SETTINGS.FORM_FACTORS = getFormFactors();
-  CONFIG.SETTINGS.AUDIT_CONDITIONS = getAuditConditions();
-  CONFIG.SETTINGS.WPT_USER_CONSENT = getUserConsent();
+  CONFIG.SETTINGS.AUDIT_CONDITIONS = getAuditConditions();  
   CONFIG.SETTINGS.WORKER_URL = ss.getRangeByName(CONFIG.RANGE_BY_NAME.WORKER_URL).getValue();
+  CONFIG.SETTINGS.WPT_MOBILE = getWptMobileConfig();
+  CONFIG.SETTINGS.WPT_DESKTOP = getWptDesktopConfig();
 }
 
-function getUserConsent() {
+function getWptMobileConfig() {
+  const ss = SpreadsheetApp.getActive();
+  var config = [
+    ['connection', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_MOBILE_CONNECTION).getValue()],
+    ['browser', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_MOBILE_BROWSER).getValue()],
+    ['viewportWidth', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_MOBILE_VIEWPORT_WIDTH).getValue()],
+    ['viewportHeight', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_MOBILE_VIEWPORT_HEIGHT).getValue()]
+  ];
+
+  config.concat(getWptGeneralConfig());
+  
+  return config;
+}
+
+function getWptDesktopConfig() {
+  const ss = SpreadsheetApp.getActive();
+  var config = [    
+    ['connection', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_DESKTOP_CONNECTION).getValue()],
+    ['browser', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_DESKTOP_BROWSER).getValue()],
+    ['viewportWidth', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_DESKTOP_VIEWPORT_WIDTH).getValue()],
+    ['viewportHeight', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_DESKTOP_VIEWPORT_HEIGHT).getValue()]
+  ];
+
+  config.concat(getWptGeneralConfig());
+
+  return config;
+}
+
+function getWptGeneralConfig() {
+  const ss = SpreadsheetApp.getActive();
+  var config = [
+    ['location', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_LOCATION).getValue()],
+    ['authUser', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_AUTH_USER).getValue()],
+    ['authPwd', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_AUTH_PWD).getValue()],
+    ['script', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_SCRIPT).getValue()],
+    ['customMetrics', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_CUSTOM_METRICS).getValue()],
+    ['testRuns', ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_TEST_RUNS).getValue()],
+    ['repeatViews', isChecked(CONFIG.RANGE_BY_NAME.WPT_REPEAT_VIEW)],
+    ['saveResponseBodies', isChecked(CONFIG.RANGE_BY_NAME.WPT_SAVE_REQUEST_BODIES)],
+    ['fullsizeVideo', isChecked(CONFIG.RANGE_BY_NAME.WPT_FULL_SIZE_VIDEO)],
+    ['javascriptTrace', isChecked(CONFIG.RANGE_BY_NAME.WPT_JS_TRACE)],
+    ['networkTrace', isChecked(CONFIG.RANGE_BY_NAME.WPT_NETWORK_TRACE)]    
+  ];
+
+  return config;
+}
+
+function isUserConsent() {
+  return isChecked(CONFIG.RANGE_BY_NAME.WPT_USER_CONSENT);
+}
+
+function isWpt() {
+  return isChecked(CONFIG.RANGE_BY_NAME.WPT_IS_ACTIVE);
+}
+
+function isChecked(namedRange) {
   const ss = sheet = SpreadsheetApp.getActive();
-  if (ss.getRangeByName(CONFIG.RANGE_BY_NAME.WPT_USER_CONSENT).getValue() === true) {
+
+  if (ss.getRangeByName(namedRange).getValue() === true) {
     return true;
   } else {
     return false;
