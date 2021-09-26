@@ -76,7 +76,6 @@ The CrUX data gets updated on a daily base. This functin updates the data for al
 Menu: Core Web Vitals Organizer → Pages → Toggle detail
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
-
 ### Audits
 
 Menu: Core Web Vitals Organizer → Audits → Recommend Audits
@@ -91,7 +90,6 @@ Hide all audit sheets with the status "Done".
 
 Menu: Core Web Vitals Organizer → Audits → Show completed audit sheets
 If you set the status in an Audit sheet to "done" the audit sheet gets automatically hidden. If you want to check completed audit sheets again, you can make them visible all at once (you can also use the Google Sheet functionality to show/hide single audit sheets)
-
 
 ### Webpagetest.org integration (paid WPT API key needed) – work in progress
 
