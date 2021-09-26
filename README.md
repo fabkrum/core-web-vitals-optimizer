@@ -53,53 +53,67 @@ If you run the first function you get asked to grant access to the CrUX API.
 This is needed to move on. Once you have granted the access you have to start the function again in the menu.
 
 ### Origins
+#### Create/Update CrUX Origins
 Menu: Core Web Vitals Organizer → Origins → Create/Update CrUX Origins
 
 The tool creates a Origin sheet and shows shows the Core Web Vital metrics based on the latest CrUX data.
 
+#### Toggle detail
 
 Menu: Core Web Vitals Organizer → Origins → Toggle detail
 
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
 ### Page Groups
+
+#### Create Page Groups
 Menu: Core Web Vitals Organizer → Page Groups → Create Page Groups
 
 As the page group example URLs are not in CrUX data set you have to set the data manually.
 
 ### Pages
+
+#### Create CrUX Pages
 Menu: Core Web Vitals Organizer → Pages → Create CrUX Pages
 
 The tool creates a Origin sheet and shows shows the Core Web Vital metrics based on the latest CrUX data.
 
-
+#### Continue after execution timeout
 Menu: Core Web Vitals Organizer → Pages → Continue after execution timeout
 
 Depending on the size of your website it is possible that you reach the script execution time (5m free Google Apps / 30m paid Google Apps). If this is the case you see an error message. To continue where you stopped last time you can use this functionality. 
 
-
+#### Update CrUX Pages table
 Menu: Core Web Vitals Organizer → Pages → Update CrUX Pages table
 
 The CrUX data gets updated on a daily base. This functin updates the data for all the URLs in the pages table.
 
-
+#### Toggle detail
 Menu: Core Web Vitals Organizer → Pages → Toggle detail
 
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
 ### Audits
 
+#### Recommend Audits
 Menu: Core Web Vitals Organizer → Audits → Recommend Audits
+
 Before you run this function you must fill out the page type for all pages with the device "ALL_FORM_FACTORS" (the script will copy the page type for the mobile and desktop devices for you). The script checks the audit checkboxes for one page with poor or needs improvement Core Web Vitals per page type. You can manually check and uncheck other pages you want to audit.
 
+#### Create audits for marked pages
 Menu: Core Web Vitals Organizer → Audits → Create audits for marked pages
+
 It creates an audit sheet for each URL which has a activated check box in the audit column (pages & page groups).
 For each URL only one audit sheet will be created.
 
+#### Hide completed audit sheets
 Menu: Core Web Vitals Organizer → Audits → Hide completed audit sheets
+
 Hide all audit sheets with the status "Done".
 
+#### Show completed audit sheets
 Menu: Core Web Vitals Organizer → Audits → Show completed audit sheets
+
 If you set the status in an Audit sheet to "done" the audit sheet gets automatically hidden. If you want to check completed audit sheets again, you can make them visible all at once (you can also use the Google Sheet functionality to show/hide single audit sheets)
 
 ### Webpagetest.org integration (paid WPT API key needed) – work in progress
