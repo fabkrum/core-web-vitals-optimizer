@@ -94,13 +94,10 @@ If you set the status in an Audit sheet to "done" the audit sheet gets automatic
 ### Webpagetest.org integration (paid WPT API key needed) – work in progress
 
 I am currently working together with the Webpagetest team on integrating
-the Webpagetest.org API.
+the Webpagetest.org.
 
 The idea is to run multiple webpagetests simultanously (mobile, desktop, with & without Cookielayer)
-and show the results the data of the median test in a table.
+and show the results of the median test in a table. This gives you a quick overview if things are getting better or not.
 
 If you add random data for the Webpagetest API Key and the test
 keys you can see a mockup which works based on random generated data.
-
-
-
