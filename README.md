@@ -54,26 +54,37 @@ This is needed to move on. Once you have granted the access you have to start th
 
 ### Origins
 Menu: Core Web Vitals Organizer → Origins → Create/Update CrUX Origins
+
 The tool creates a Origin sheet and shows shows the Core Web Vital metrics based on the latest CrUX data.
 
+
 Menu: Core Web Vitals Organizer → Origins → Toggle detail
+
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
 ### Page Groups
 Menu: Core Web Vitals Organizer → Page Groups → Create Page Groups
+
 As the page group example URLs are not in CrUX data set you have to set the data manually.
 
 ### Pages
 Menu: Core Web Vitals Organizer → Pages → Create CrUX Pages
+
 The tool creates a Origin sheet and shows shows the Core Web Vital metrics based on the latest CrUX data.
 
+
 Menu: Core Web Vitals Organizer → Pages → Continue after execution timeout
+
 Depending on the size of your website it is possible that you reach the script execution time (5m free Google Apps / 30m paid Google Apps). If this is the case you see an error message. To continue where you stopped last time you can use this functionality. 
 
+
 Menu: Core Web Vitals Organizer → Pages → Update CrUX Pages table
+
 The CrUX data gets updated on a daily base. This functin updates the data for all the URLs in the pages table.
 
+
 Menu: Core Web Vitals Organizer → Pages → Toggle detail
+
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
 ### Audits
