@@ -15,16 +15,16 @@ Google's [Core Web Vitals](https://web.dev/vitals/) are a set of metrics to meas
 * A fast loading website with a good user experience has a positive impact on user engagement and conversions: [WPO stasts](https://wpostats.com/tags/core%20web%20vitals/)
 * The Core Web Vitals are a search ranking factor in the Google mobile search since June 2021: [Official Google Announcement](https://developers.google.com/search/blog/2020/11/timing-for-page-experience?hl=en)
 
-## How does the Core Web Vitals Optimizer work?
+## What is the Core Web Vitals Optimizer?
 
-The Core Web Vitals Optimizer is a tool which supports a proven workflow to get good CWV:
+The Core Web Vitals Optimizer is a tool based on Google Sheets which supports a proven workflow to achieve good CWV with any website:
 
-* A Google Sheet with added Core Web Vitals functions (free)
-* CrUX API integration to get Googles Core Web Vitals data (free)
-* Audit checklist for page types that need improvement
+* A Google Sheet with added Core Web Vitals functionality (see "Core Web Vital Optimizer" menu) (free)
+* CrUX API integration to get Googles latest Core Web Vitals data (free)
+* Identify pages that need to be improved
+* Create audit sheets and follow the checklist to identify improvement opportunities
+* Webpagetest API integration - optional (you need to buy a [Webpagetest API Key](https://product.webpagetest.org/api)) **(this is not available yet)**
 * Blogpost / Video to explain each audit step in detail **(this is not available yet)**
-* Webpagetest API integration (paid: you need to buy a [Webpagetest API Key](https://product.webpagetest.org/api)) **(this is not available yet)**
-
 
 ## Who is the Core Web Vitals Optimizer for?
 
