@@ -36,6 +36,7 @@ The Core Web Vitals Optimizer is a tool which supports a proven workflow to get 
 
 ### Make a copy of the Google Sheet
 File: [Google Sheet](https://docs.google.com/spreadsheets/d/1XmV0MtHBfcJTNt560u6_4Ier8DJdyHuXsu6KrZVZARI/edit?usp=sharing)
+
 Menu: File → Make a copy
 
 ### Get a CrUX API Key (free)
