@@ -169,6 +169,8 @@ Menu: Core Web Vitals Organizer → Audits → Create audits for marked pages
 It creates an audit sheet for each URL which has a activated check box in the audit column (pages & page groups).
 For each URL only one audit sheet will be created.
 
+![CleanShot 2021-11-14 at 19 57 30](https://user-images.githubusercontent.com/21277749/141694580-a2417085-de15-40b9-ae6c-57e29d8a0b56.png)
+
 #### Hide completed audit sheets
 Menu: Core Web Vitals Organizer → Audits → Hide completed audit sheets
 
