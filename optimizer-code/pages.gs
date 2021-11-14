@@ -6,88 +6,286 @@ function pagesObject(mode) {
   const globalCacheSheet = globalSs.getSheetByName(CONFIG.SHEET.CACHE_URLS);
   var globalCounterChecked = 0;
   var globalCounterAdded = 0;
-  var globalTotalTests = 0;
-  var globalActive = true;
-  var globalLeftTests = 0;  
+  var globalTotalTests = 0;  
   var globalSheet = globalSs.getSheetByName(CONFIG.SHEET.PAGES);
   var globalExistingEntries = [];
-  var globalUrl = '';
-  var globalFormFactor = '';
+  var globalCounterApiCalls = 0;
+  var globalTrigger = 'user';
   
   function run() {
     setConfiguration();
+    var range;
+    
+    // Delete the trigger
+    if (hasTrigger('initPages') || hasTrigger('initUpdatePages')) {
+      globalTrigger = 'script';
+      deleteTrigger('initPages');
+      deleteTrigger('initUpdatePages');
+    }
 
     // Generate a pages sheet from template if it doesn't exists
     if (globalSheet === null) {
-      globalSheet = createSheetFromTemplate(CONFIG.SHEET.PAGES, CONFIG.SHEET.TEMPLATE_PAGES);  
+
+      // Only create sheet if we have entries
+      if (CONFIG.SETTINGS.SITEMAPS < 1 && CONFIG.SETTINGS.URLS < 1) {
+        showAlert('Error: No Page URLs defined','Please go to the configuration sheet first and add URLs in the Sitemap.xml or URLs column.');
+        return false;
+      } else {
+        globalSheet = createSheetFromTemplate(CONFIG.SHEET.PAGES, CONFIG.SHEET.TEMPLATE_PAGES, true);
+        log('Pages Sheet was created',true);
+        
+        // Put the sheets in the right order
+        orderSheets();
+      }        
     }
 
     // Open the Sheet
     globalSs.setActiveSheet(globalSheet);
 
-    globalExistingEntries = globalSheet.getRange(CONFIG.RANGE.PAGES_DATA).getValues();
+    // Change the headline to make the user aware that things are in progress
+    range = globalSheet.getRange('A1');
+    range.setFontColor('#ff4e42');
+    range.setValue('<Work in progress. Please wait until you see the headline "High-Traffic Pages".>');   
 
-    switch(mode) {
-      // Source: URLs from the Page table.
-      // This reduces the necessary API calls dramatically and is much faster than the other modes.
-      case 'update':
-        updateEntries();
-      break;
+    // Source: URLs from the Page table.
+    // This reduces the necessary API calls dramatically and is much faster than the other modes.
+    if (mode === 'update') {
+      log('Run in update mode');
+      updateEntries();
+      
+    // Source: Sitemap or Cache      
+    } else {
+      getNewEntries();
+    }
 
-      // Checks the last row in the Pages table.
-      // It skips fast foward to this URL before it starts making CrUX API calls.
-      case 'continue':
-        setStartCondition();
-        globalActive = false;
-        getNewEntries(false);
-      break;
+    // Set headline after the script has finished
+    if (hasTrigger('initPages') === false && hasTrigger('initUpdatePages') === false) {      
+      range.setFontColor('#ffffff');
+      range.setValue('High-Traffic Pages');
+    }
+  }
+ 
+  function getNewEntries() {    
+    var urls = globalCacheSheet.getRange(CONFIG.RANGE.CACHE).getValues();
+    var numberOfTests = 0;
+    var startIndex = 0;
+    var startTime;
 
-      // Loop all URLs that are hidden in the Config (Sitemap & URLs)
-      // For each URL we have to make a CrUX API call. This is a very time consuming process.
-      default:
-        getNewEntries(true);
-    }  
+    // Work with the Cache
+    if (hasValidEntries(urls)) {
+      globalExistingEntries = globalSheet.getRange(CONFIG.RANGE.PAGES_DATA).getValues();
+      log('Cached URLs found',true);
+
+      // Get the index of the first not tested URL from Cache
+      startIndex = getIndexOfFirstNotTestedUrl()
+      log('Start Index: ' + startIndex,true);
+
+      // Finish the not tested URLs
+      if (startIndex !== null) {
+        log('Untested URLs are detected. Move on with index: ' + startIndex);
+        // Get all URLs which are in the CrUX DB
+        urls = urls.map(url => {
+          return url[1];
+        });
+
+        numberOfTests = urls.length;
+        sendStatusMessage(numberOfTests, 'Checking the untested URLs from the Configuration sheet for "ALL_FORM_FACTORS"');
+
+        startTime = Date.now();
+
+        getData(urls,CONFIG.DEFAULT.CRUX_FORM_FACTOR,startIndex);
+
+      // Start over / Update existing entries and test for new entries
+      } else {
+        initDeleteCache();
+        showMessage('Lets start from scratch and see if there are new entries', 'Cached URLs were deleted');
+        getTestUrls();
+      }
+
+    // No cached Urls - check sitemaps and Urls
+    } else {
+      log('No cached URLs found. Check sitemap and URLs');
+      getTestUrls();
+    }
+
+    startTime = Date.now();
+    getCruxApiCallsPerMinute(startTime);
   }
 
   function updateEntries() {
-    var numberOfTests = globalExistingEntries.length;
-    
-    sendStatusMessage(numberOfTests, 'Pages in table get updated');
+    var startIndex = null;
+    var urls = [];
 
-    globalExistingEntries.forEach(function(entry, index) {      
-      var url = entry[3];
-      var formFactor = entry[4];
+    globalExistingEntries = globalSheet.getRange(CONFIG.RANGE.PAGES_DATA).getValues();
+    startIndex = getIndexOfContinueHere();
+
+    if (startIndex !== null) {
+      urls = globalExistingEntries.splice(startIndex);
+      globalExistingEntries = globalSheet.getRange(CONFIG.RANGE.PAGES_DATA).getValues();
+    } else {
+      urls = globalExistingEntries;
+    }
+
+    globalTotalTests = urls.length;
+    
+    if (globalTotalTests > 0) {
+      sendStatusMessage(globalTotalTests, 'Pages in table get updated');
+    } else {
+      showMessage('No pages found. Please run "Create CrUX Pages" first.', 'Error: No pages found');
+      return false;
+    }
+
+    urls.every(function(entry) { 
+      var url = entry[2];
+      var index;      
       
-      globalCounterChecked++;
-      logStatus(url, formFactor);
-      
-      getCrUXData('url', url, formFactor);
-      Utilities.sleep(CONFIG.DEFAULT.CRUX_API_TIMEOUT);
+      // Stop the script and set a trigger if the time is up
+      if (isTimeUp()) {
+
+        // Mark next entry where we should continue
+        index = getIndexOfNextEntry(url);
+        globalSheet.getRange(index, 2).setValue('Continue here');
+        
+        // Set the trigger
+        setTrigger('initUpdatePages', globalTrigger);
+        return false;
+      } else {
+        globalCounterChecked++;
+        logStatus(url, CONFIG.DEFAULT.CRUX_FORM_FACTOR);
+        
+        getCrUXData('url', url, CONFIG.DEFAULT.CRUX_FORM_FACTOR);
+
+        // If the number of calls will exceed the API limit set a timeout
+        if (globalTotalTests > CONFIG.SETTINGS.CRUX_API_LIMIT) {
+          Utilities.sleep(CONFIG.SETTINGS.CRUX_API_TIMEOUT);
+        }
+
+        return true;
+      }
     });    
   }
 
-  function getNewEntries(showMessage) {
-    var sitemaps = getSitemaps();
-    var sitemapUrls = getSitemapUrls(sitemaps);
-    var numberOfTests = getNumberOfTests(sitemapUrls.length);
-    globalTotalTests = numberOfTests;
+  function getIndexOfNextEntry(url) {
+    var nextIndex = null;
 
-    if (showMessage === true) {
-      sendStatusMessage(numberOfTests, 'All URLs from the Configuration sheet are checked');      
-    }
+    globalExistingEntries.every(function(entry,index) {
+      const entryUrl = entry[2];
 
-    // Loop through all URLs and get the data from the CrUX API
-    CONFIG.SETTINGS.FORM_FACTORS.forEach(function(formFactor) {
-      CONFIG.SETTINGS.URLS.forEach(function(url) {
-        checkStartCondition('url', url, formFactor, numberOfTests);
-      });
-      
-      sitemapUrls.forEach(function(url) {            
-        checkStartCondition('url', url, formFactor, numberOfTests);
-      });
+      if (entryUrl === url) {
+        nextIndex = index + 3;
+        return false;
+      } else {
+        return true;
+      }
     });
 
-    cacheLastUrl(globalUrl, globalFormFactor);
+    return nextIndex;
+  }
+
+  function getTestUrls() {
+    const urls = getUrls();
+    const numberOfTests = urls.length;
+
+    if (numberOfTests > 0) {
+      sendStatusMessage(numberOfTests, 'Checking all URLs from the Configuration sheet for "' + CONFIG.DEFAULT.CRUX_FORM_FACTOR + '"');
+    } else {
+      showMessage('Please add the sitemap.xml and/or URLs in the configuration sheet.', 'No URLs found');
+    }    
+
+    // Check all URLs for all_form_factors and check if they are in the CrUX DB
+    getData(urls,CONFIG.DEFAULT.CRUX_FORM_FACTOR,0);
+  }
+
+  function getCruxApiCallsPerMinute(startTime) {
+    const time = Date.now() - startTime;
+    const minutes = Math.floor(time / 60000);
+    log('CrUX API calls per minute: ' + globalCounterApiCalls / minutes);
+  }
+
+  function hasValidEntries(urls) {
+    var status = false;
+    var length = urls.length;
+
+    if (length > 1) {
+      status = true;
+    } else if (length === 1) {
+      if (urls[0] != ',,' && urls[0] != '') {
+        status = true;
+      }
+    }
+
+    return status;
+  }
+
+  function getData(urls, formFactor, startIndex) {
+    const numberOfTests = urls.length - startIndex;
+    
+    globalTotalTests = numberOfTests;
+    sendStatusMessage(numberOfTests, 'Checking all URLs for ' + formFactor);   
+
+    urls.every(function(url,index) {
+      var status;
+
+      // Stop the script if the time is up
+      if (isTimeUp()) {
+        showMessage('The script will start again automatically in 1 minute to check the remaining ' + (numberOfTests - globalCounterChecked) + ' URLs', 'The Script Excecution time is up');
+        globalSheet.getRange('A1').setValue('<Work in progress: ' + (numberOfTests - globalCounterChecked) + ' URLs are left>');
+        SpreadsheetApp.flush();       
+        setTrigger('initPages', globalTrigger);
+        return false;
+
+      } else {
+        if (index >= startIndex) {
+          status = getCrUXData('url', url, formFactor);
+
+          if (status === true) {
+            updateCacheUrlStatus(index + 3, 'available');
+            globalCounterAdded++;
+          } else {
+            updateCacheUrlStatus(index + 3, 'not available');
+          }
+
+          globalCounterChecked++;
+          logStatus(url, formFactor);
+          Utilities.sleep(CONFIG.SETTINGS.CRUX_API_TIMEOUT);
+        }
+
+        return true;
+      }
+    });
+  }
+
+  // Mark existing CrUX pages in the cache data base
+  function updateCacheUrlStatus(index, status) {    
+    // Update Timestamp
+    globalCacheSheet.getRange(index,1).setValue(getDateTime());
+    
+    // Update Status
+    globalCacheSheet.getRange(index,3).setValue(status);
+    
+    // Make sure to update the sheet to update the fields right away
+    SpreadsheetApp.flush();
+  }
+
+  function getUrls() {
+    const sitemaps = getSitemaps();
+    const sitemapUrls = getSitemapUrls(sitemaps);
+    const urls = CONFIG.SETTINGS.URLS;
+    const mergedUrls = sitemapUrls.concat(urls);
+    var uniqueUrls = [];
+
+    // Get rid of duplicate entries
+    uniqueUrls = [...new Set(mergedUrls)];
+
+    // Sort Urls alphabetically
+    uniqueUrls.sort();
+
+    // Add the Urls to the Cache list
+    if (uniqueUrls.length > 0) {
+      cacheUrls(uniqueUrls);
+    }
+
+    return uniqueUrls;
   }
 
   function addEntry(row) {
@@ -95,13 +293,12 @@ function pagesObject(mode) {
   }
 
   function isDuplicate(data) {
-    var url = data[3];
-    var form = data[4];
+    var url = data[2];    
     var rowNumber = false;
 
     for (var i = 0; i < globalExistingEntries.length; ++i) {
-      if (url === globalExistingEntries[i][3] && form === globalExistingEntries[i][4]) {
-        rowNumber = i + 3;      
+      if (url == globalExistingEntries[i][2]) {
+        rowNumber = i + 3;
         break;
       }
     }
@@ -109,134 +306,105 @@ function pagesObject(mode) {
     return rowNumber;
   }
 
-  function getEstimatedTestTime(numberOfTests) {    
-    var ms = CONFIG.DEFAULT.CRUX_API_TIME * numberOfTests;
-
-    return ms;  
-  }
-
-  function msToTime(ms) {
-    let seconds = (ms / 1000).toFixed(1);
-    let minutes = (ms / (1000 * 60)).toFixed(1);
-    let hours = (ms / (1000 * 60 * 60)).toFixed(1);
-    let days = (ms / (1000 * 60 * 60 * 24)).toFixed(1);
-
-    if (seconds < 60) return seconds + " seconds";
-    else if (minutes < 60) return minutes + " minutes";
-    else if (hours < 24) return hours + " hours";
-    else return days + " days"
-  }
-
-  function getNumberOfTests(sitemapUrls) {
-    var numberOfUrls = sitemapUrls + CONFIG.SETTINGS.URLS.length;
-    var numberOfFormFactors = CONFIG.SETTINGS.FORM_FACTORS.length;
-
-    return numberOfFormFactors * numberOfUrls;
-  }
-
   function getSitemaps() {
     var maps = [];
 
     if (!CONFIG.SETTINGS.SITEMAPS.length) {
+        log('No sitemaps found', true);
         return maps;
     }
 
+    log('Sitempas ' + JSON.stringify(CONFIG.SETTINGS.SITEMAPS), true);
+
     CONFIG.SETTINGS.SITEMAPS.forEach(function(map) {
+        log('Get entries for sitemap ' + map, true);
         var entries = getSitemapEntries(map, 'sitemap');
         
         // Add all sitemaps from index
         if (entries.length) {
             maps.push(...entries);
+            log('Found entries', true);
         // Add a single sitemap
         } else {
+            log('Found no entries', true);
             maps.push(map);
         }
-    });
+    });    
 
     if (maps.length) {
       log(maps.length.toLocaleString() + ' sitemap(s) found. It will take some time to extract all URLs.', true);
+      showMessage(maps.length.toLocaleString() + ' sitemap(s) found. It will take some time to extract all URLs.', 'Checking Sitemap(s)');
     }
 
     return maps;
   }
 
-  function isValidCache() {
-    const now = getTimestamp();
-    var timestamp = globalCacheSheet.getRange(CONFIG.RANGE.CACHE_TIMESTAMP).getValue();
-    
-    if (timestamp === '') {
-      return false;
-    }
-    
-    // Calculate the timestamp from the date object    
-    timestamp = getTimestamp(timestamp);
+  function getIndexOfContinueHere() {
+    var startIndex = null;
 
-    // Check the expire date
-    if ((now - timestamp) < CONFIG.DEFAULT.CRUX_CACHE_TIME) {
-      return true;
-    } else {
-      deleteCache();
-      return false;
-    }
+    globalExistingEntries.every(function(entry,index) {
+
+      const timestamp = entry[1];
+      const url = entry[2];
+
+      if (timestamp === 'Continue here') {
+        startIndex = index;
+        log('Continue updating with page (index/url): ' + index + '/' + url,true);
+        return false
+      } else {
+        return true
+      }
+    });
+
+    return startIndex;
   }
 
-  function deleteCache() {
-    globalCacheSheet.getRange(CONFIG.RANGE.CACHE).clearContent();
-    log('Deleted outdated cache.', true);
-  }
-
-  function getCachedUrls() {
-    var cachedUrls = globalCacheSheet.getRange(CONFIG.RANGE.CACHE_URLS).getValues();
+  function getIndexOfFirstNotTestedUrl() {
+    var cachedUrls = globalCacheSheet.getRange(CONFIG.RANGE.CACHE).getValues();
     var numberOfCachedUrls = cachedUrls.length;
+    var startIndex = null;
 
-    if (isValidCache() && numberOfCachedUrls > 1) {  
-      const urls = cachedUrls.map(url => {
-        return url[0];
+    if (cachedUrls && numberOfCachedUrls > 0) {      
+      cachedUrls.every(function(page,index) {
+        const status = page[2];
+        const url = page[1];
+
+        if (status === 'not tested') {
+          startIndex = index;
+          log('Next not tested page (index/url): ' + index + '/' + url,true);
+          return false;
+        } else {
+          return true;
+        }          
       });
-
-      log(numberOfCachedUrls.toLocaleString() + ' URLs from cache are used.', true);
-      return urls;  
-    } else {
-      return null;
-    }
-  }
-
-  function getTimestamp(date) {
-    var timestamp;
-
-    if (date) {
-      timestamp = date.getTime();
-    } else {
-      timestamp = new Date().getTime();
     }
 
-    // Get a timestamp based on seconds instead of miliseconds
-    timestamp = Math.floor(timestamp / 1000);
-
-    return timestamp;
+    return startIndex;
   }
 
   function cacheUrls(urls) {
     const numberOfEntries = urls.length;
-    const timestamp = new Date();
+    const timestamp = getDateTime();
+    const status = "not tested";    
     const values = urls.map(url => {
-      return [timestamp, url];
+      return [timestamp, url, status];
     });
 
-    globalCacheSheet.getRange(3, 1, numberOfEntries, 2).setValues(values);
+    globalCacheSheet.getRange(3, 1, numberOfEntries, 3).setValues(values);
     log('Cached ' + numberOfEntries.toLocaleString() + ' URLs.', true);
   }
 
   function getSitemapUrls(maps) { 
       var urls = [];
-      var cachedUrls = getCachedUrls();
+      var cachedUrls = globalCacheSheet.getRange(CONFIG.RANGE.CACHE_URLS).getValues();
 
-      if (cachedUrls !== null) {
+      if (hasValidEntries(cachedUrls)) {
+        log('RETURN CACHED URLS');
         return cachedUrls;
       }
 
       if (!maps.length) {
-        return urls;        
+        return urls;
       }          
 
       maps.forEach(function(map) {      
@@ -246,27 +414,23 @@ function pagesObject(mode) {
               urls.push(...entries);
           }
       });
-
-      // Sort Urls alphabetically
-      urls.sort();
-
-      // Save URLs in Sitemap DB
-      cacheUrls(urls);
     
       return urls;
   }
 
-  function getSitemapEntries(url, type) { 
-      try {          
-        var xml = UrlFetchApp.fetch(url,{muteHttpExceptions:true}).getContentText();                  
+  function getSitemapEntries(url, type) {  
+      url = url.trim();    
+      try {
+        var xml = UrlFetchApp.fetch(url,{muteHttpExceptions:true}).getContentText();        
         var document = XmlService.parse(xml);
         var root = document.getRootElement();
         var namespace = root.getNamespace().getURI();
         var sitemapNameSpace = XmlService.getNamespace(namespace);
         var entries = root.getChildren(type, sitemapNameSpace);
         var locs = [];
+
         for (var i = 0; i < entries.length; i++) {          
-          locs.push(entries[i].getChild('loc', sitemapNameSpace).getText());
+          locs.push(entries[i].getChild('loc', sitemapNameSpace).getText());          
         }
 
         return locs;
@@ -281,149 +445,54 @@ function pagesObject(mode) {
       }
   }
 
-  function setStartCondition() {
-    const url = globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_URL);
-    const formFactor = globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_FORM_FACTOR);
-    const lastRow = globalSheet.getLastRow();
-    var data = [];
-
-    if (url !== null && formFactor !== null) {
-      CONFIG.START_CONDITION_URL = url.getValue();
-      CONFIG.START_CONDITION_FORM_FACTOR = formFactor.getValue();
-      log('Start Condition is last cached URL: ' + CONFIG.START_CONDITION_URL + ' / FormFactor: ' + CONFIG.START_CONDITION_FORM_FACTOR, true);
-    } else {
-      data = globalSheet.getRange(lastRow, 4, 1, 2).getValues();
-      CONFIG.START_CONDITION_URL = data[0][0];
-      CONFIG.START_CONDITION_FORM_FACTOR = data[0][1];
-      log('Start Condition is URL from last row: ' + CONFIG.START_CONDITION_URL + ' / FormFactor: ' + CONFIG.START_CONDITION_FORM_FACTOR, true);
-    }
-  }
-
-  function cacheLastUrl(url, formFactor) {
-    var leftTests = globalTotalTests - globalCounterChecked;
-    globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_URL).setValue(url);
-    globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_FORM_FACTOR).setValue(formFactor);
-    globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.CACHE_LAST_URL_TESTS_LEFT).setValue(leftTests);
-    log('Last checked URL is cached: ' + url + ' / Form Factor: ' + formFactor + ' / Tests left: ' + leftTests.toLocaleString());
-  }
-
-  function checkStartCondition(source, url, formFactor, numberOfTests) {
-    if (globalActive === true) {
-      globalUrl = url;
-      globalFormFactor = formFactor;
-      getCrUXData(source, url, formFactor);
-      
-      // After every 10th check save the last check URL
-      if (globalCounterChecked > 0 && (globalCounterChecked % 10) === 0) {
-        cacheLastUrl(url, formFactor);
-      }
-
-      globalCounterChecked++;
-      logStatus(url, formFactor);
-      
-      Utilities.sleep(CONFIG.DEFAULT.CRUX_API_TIMEOUT);
-    }
-
-    if (globalActive === false) { 
-        globalLeftTests++;
-
-        // If the start condition has occured we switch the run mode and checking the CrUX API
-        if (url == CONFIG.START_CONDITION_URL && formFactor == CONFIG.START_CONDITION_FORM_FACTOR) {
-          globalActive = true;
-          globalTotalTests = numberOfTests - globalLeftTests;
-          
-          sendStatusMessage((globalTotalTests), 'Script continues with new URLs');
-        } 
-    }
-
-    return;
-  }
-
-  function logStatus(url, formFactor) {
-    const percentAdded = Math.round((globalCounterAdded * 100 / globalCounterChecked) * 100) / 100;
-      log(globalCounterAdded.toLocaleString() + '/' + globalCounterChecked.toLocaleString() + '/' + globalTotalTests.toLocaleString() + ' (' + percentAdded + '%) / '  + formFactor + ' / ' + url, true);
-  }
-
-  function sendStatusMessage(numberOfTests, message) {
-    var executionTime = getEstimatedTestTime(numberOfTests);
-
-    log(message + ': ' + numberOfTests.toLocaleString() + ' CrUX API Calls are required. Estimated time: ' + msToTime(executionTime), true);
-    showMessage(message + ': ' + numberOfTests.toLocaleString() + ' CrUX API Calls are required. Estimated time: ' + msToTime(executionTime));  
-  }
-
-  function getStatus(fcp, lcp, fid, cls) {
-    var output = '';
-
-    if ((fcp > CONFIG.CWV.FCP_POOR) || (lcp > CONFIG.CWV.LCP_POOR) || (fid > CONFIG.CWV.FID_POOR) || (cls > CONFIG.CWV.CLS_POOR)) {
-      output = 'Poor'; 
-    } else if ((fcp > CONFIG.CWV.FCP_GOOD) || (lcp > CONFIG.CWV.LCP_GOOD) || (fid > CONFIG.CWV.FID_GOOD) || (cls > CONFIG.CWV.CLS_GOOD)) {
-      output = 'Needs Improvement'
-    } else {
-      output = 'Good';
-    }
-
-    return output;
-  }
-
-  function setAudit(cell, fcp, lcp, fid, cls) {
-    const audit = cell.getValue();
-    const status = getStatus(fcp, lcp, fid, cls);
-    
-    // We already have an audit page or the user made a decision
-    if (audit !== '') {
-      return;
-    }
-
-    // Insert a checkbox
-    cell.insertCheckboxes();
-    log('Checkbox was added in audit column \ Status: ' + status + ' \ Conditions: ' + CONFIG.SETTINGS.AUDIT_CONDITIONS, true);
-
-    // Check the box if the conditions
-    if (CONFIG.SETTINGS.AUDIT_CONDITIONS.includes(status)) {
-      cell.setValue(true);
-      log('Checkbox was checked.', true);
-    }   
+  function logStatus(url) {
+    log(globalCounterAdded.toLocaleString() + '/' + globalCounterChecked.toLocaleString() + '/' + globalTotalTests.toLocaleString() + ' / ' + url,true);
   }
 
   function addRow(...args) {
     const firstRow = globalSs.getRangeByName(CONFIG.RANGE_BY_NAME.PAGES_FIRST_ROW);
     const lastColumn = globalSheet.getLastColumn();
-    const fcp = args[5];
-    const lcp = args[9];
-    const fid = args[13];
-    const cls = args[17];
-    const row = [
-      '',
-      Utilities.formatDate(new Date(), CONFIG.SETTINGS.TIMEZONE, CONFIG.SETTINGS.DATEFORMAT),
-      Utilities.formatDate(new Date(), CONFIG.SETTINGS.TIMEZONE, CONFIG.SETTINGS.TIMEFORMAT),
-      ...args
-    ];    
-    const index = isDuplicate(row);
+    const numberFormat = [["0.00%", "0.00%", "0.00%", "#,###", "0.00%", "0.00%", "0.00%", "#,###", "0.00%", "0.00%", "0.00%", "#,###", "0.00%", "0.00%", "0.00%", "0.00"]];    
+    var numberRange;
     var setValues = [];
     var lastRow;
     var auditCell;
+    var row = [
+      '',
+      getDateTime(),
+      ...args
+    ];
+    const index = isDuplicate(row);
 
-    // Update the exising entry
-    if (index !== false) {      
-      row.shift();
+    // Update the exising entry without overwriting audit, page type, and page view
+    if (index !== false) {
+      // Update Date
+      globalSheet.getRange('B' + index).setValue(getDateTime());
+      
+      // Update CrUX Data    
+      row = row.slice(-16);
       setValues.push(row);
-      globalSheet.getRange(index, 2, 1, row.length).setValues(setValues);
-      auditCell = globalSheet.getRange('A' + index);
-      setAudit(auditCell, fcp, lcp, fid, cls);
+      globalSheet.getRange(index, 6, 1, row.length).setValues(setValues);      
       updateFormating(index);
       log("Updated Row (" + index + "): " + row, true);
+    
     // Add a new entry
     } else {
       log("New Row: " + row, true);
       addEntry(row);
-      globalSheet.appendRow(row);    
+      globalSheet.appendRow(row);
       globalCounterAdded++;
       lastRow = globalSheet.getLastRow();
       auditCell = globalSheet.getRange('A' + lastRow);
-      setAudit(auditCell, fcp, lcp, fid, cls);
-
+      setCheckbox(auditCell);
+      
       // Apply the format from first row           
       firstRow.copyFormatToRange(globalSheet, 1, lastColumn, lastRow, lastRow);
+      
+      // Make sure the numbers are correctly formated
+      numberRange = globalSheet.getRange('F' + lastRow + ':' + 'U' + lastRow);
+      numberRange.setNumberFormats(numberFormat);
+
       updateFormating(lastRow);
     }
 
@@ -442,45 +511,85 @@ function pagesObject(mode) {
       formFactor
     });
 
-    if (!response) {     
-      return;
+    globalCounterApiCalls += 1;
+
+    // URL is not part of CrUX DB 
+    if (!response) {              
+      return false;
     }
     
     const fcp = getMetricData(response.record.metrics.first_contentful_paint);
     const lcp = getMetricData(response.record.metrics.largest_contentful_paint);
     const fid = getMetricData(response.record.metrics.first_input_delay);
     const cls = getMetricData(response.record.metrics.cumulative_layout_shift);
+
+    if (cls.p75 != CONFIG.DEFAULT.NO_RESULT) {
+      cls.p75 = parseFloat(cls.p75)
+    }
     
-    addRow(value, formFactor,
+    addRow(value,
+          '',
+          '',
           fcp.good, fcp.ni, fcp.poor, fcp.p75,
           lcp.good, lcp.ni, lcp.poor, lcp.p75,
           fid.good, fid.ni, fid.poor, fid.p75,
-          cls.good, cls.ni, cls.poor, parseFloat(cls.p75));
+          cls.good, cls.ni, cls.poor, cls.p75);
+
+    return true;          
   }
 
-  function callAPI(request) {
-    try {
-      return CrUXApiUtil.query(request);
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  function toggleDetail() {
+    const ss = SpreadsheetApp.getActive();
+    const sheet = ss.getSheetByName(CONFIG.SHEET.PAGES);
 
-  function getMetricData(metric) {
-    if (!metric) {
-      return {};
+    if (sheet === null) {
+      showAlert('ERROR: Pages sheet not found','Pleaes create a Pages sheet first.');
+      return false;
     }
-    
-    return {
-      good: metric.histogram[0].density,
-      ni: metric.histogram[1].density,
-      poor: metric.histogram[2].density,
-      p75: metric.percentiles.p75
-    };
+
+    const lastRow = sheet.getLastRow();
+    const audit = sheet.getRange('A1:A');
+    const pageDetails = sheet.getRange('D1:E');
+    const fcp = sheet.getRange('F1:H');
+    const fcpTitle = sheet.getRange('F1:I1');
+    const lcp = sheet.getRange('J1:L');
+    const lcpTitle = sheet.getRange('J1:M1');
+    const fid = sheet.getRange('N1:P');
+    const fidTitle = sheet.getRange('N1:Q1');
+    const cls = sheet.getRange('R1:T');
+    const clsTitle = sheet.getRange('R1:U1');
+    const ranges = [audit, pageDetails, fcp, lcp, fid, cls];
+    const titlesShort = [[fcpTitle,'FCP'],[lcpTitle,'LCP'],[fidTitle,'FID'],[clsTitle,'CLS']];
+    const titlesLong = [[fcpTitle,'First Contentful Paint (FCP)'],[lcpTitle,'LargestContenful Paint (LCP)'],[fidTitle,'First Input Delay (FID)'],[clsTitle,'Cumulative Layout Shift (CLS)']]; 
+    var range;
+
+    sheet.activate();
+
+    // Figure out current view
+    if (titlesShort[0][0].getValue() == titlesShort[0][1]) {
+      log('Show Detail');
+
+      for (var i = 1; i <= lastRow; i++) {
+        range = sheet.getRange('C' + i);
+        range.setBorder(null, null, null, false, null, null);
+      }
+
+      showDetail(sheet,ranges,titlesLong);
+      
+    } else {
+      log('Hide Detail');
+      hideDetail(sheet,ranges,titlesShort);
+
+      for (var j = 1; j <= lastRow; j++) {
+        range = sheet.getRange('C' + j);
+        range.setBorder(null, null, null, true, null, null, "#999999", SpreadsheetApp.BorderStyle.SOLID_THICK);        
+      }
+    }     
   }
 
   return Object.freeze({
     objectName: 'pagesObject',
-    run: run
+    run: run,
+    toggleDetail: toggleDetail
   });
 }
