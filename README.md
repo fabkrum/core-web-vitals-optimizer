@@ -193,6 +193,8 @@ This gives you a nice overview how the Core Web Vitals change over time.
 You get two different chart types for each Core Web Vital metric.
 It is recommended to activate the daily CrUX updates.
 
+A special thanks to Barry Polland (@tunetheweb) who shared his charts with me.
+
 
 ### Webpagetest.org integration (paid WPT API key needed) – work in progress
 
