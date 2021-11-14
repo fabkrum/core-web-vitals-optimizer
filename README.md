@@ -60,6 +60,13 @@ You have to [create a free CrUX API key](https://developers.google.com/web/tools
 If you run the first function you get asked to grant access to the CrUX API.
 This is needed to move on. Once you have granted the access you have to start the function again in the menu.
 
+Before you can run any functionality from the menu you have to give the sheet accesss to the Google sheet, allow to contact the CrUX and WPT APIs, and allow that scripts can be scheduled to update your data at night.
+
+When you make a copy of the Core Web Vital sheet you become the owner and you Google account is the only one that can access this data.
+
+![CleanShot 2021-11-14 at 18 46 22](https://user-images.githubusercontent.com/21277749/141692385-71fcfdf9-c865-4bd4-8df2-b587be661409.png)
+
+
 It is recommended to follow the order in the "Core Web Vitals Optimizer" menu
 
 ### 1. Origins
