@@ -57,15 +57,22 @@ You have to [create a free CrUX API key](https://developers.google.com/web/tools
 * Copy & Paste the CrUX Api key into the cell F11. To hide the key the color of the text and background turns green.
 * Webpagetest - this is still work in progress (don't buy a WPT API key yet) - feel free to add dummy data for the key and the test templates IDs to see a mockup in the audit sheets.
 
-If you run the first function you get asked to grant access to the CrUX API.
-This is needed to move on. Once you have granted the access you have to start the function again in the menu.
+If you run the first function you see this scary message. If anybody has an idea how this can be avoided please ping me. I wasn't able to figure this out.
+To proceed you have to click on the "Advance" button.
 
-Before you can run any functionality from the menu you have to give the sheet accesss to the Google sheet, allow to contact the CrUX and WPT APIs, and allow that scripts can be scheduled to update your data at night.
+![CleanShot 2021-11-14 at 18 57 01](https://user-images.githubusercontent.com/21277749/141692648-13853955-2cec-49a3-b800-9f8c9ee3a9d6.png)
 
-When you make a copy of the Core Web Vital sheet you become the owner and you Google account is the only one that can access this data.
+In the next step you have to grant the script permission to the following things:
+
+* The CWV Google sheet (other sheets can't be accessed)
+* Contact the CrUX and WPT APIs (which is needed to get the data)
+* triggers, which are needed for the script to continue its work and to update the CrUX data automatically
 
 ![CleanShot 2021-11-14 at 18 46 22](https://user-images.githubusercontent.com/21277749/141692385-71fcfdf9-c865-4bd4-8df2-b587be661409.png)
 
+If you make your own copy the script is running from your own Google account and nobody else has access to the data.
+
+## Follow the steps in the right order
 
 It is recommended to follow the order in the "Core Web Vitals Optimizer" menu
 
