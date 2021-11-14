@@ -196,20 +196,20 @@ keys you can see a mockup which works based on random generated data.
 If you open the config.gs (Extendions → Script Editor → config.gs) you can easily change the following settings:
 
 #### Change Timezone ([Timezone Format](https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html))
-CONFIG.DEFAULT.TIMEZONE = 'GMT+2';
-CONFIG.DEFAULT.DATEFORMAT = 'yyyy-MM-dd';
-CONFIG.DEFAULT.TIMEFORMAT = 'HH:mm:ss';
+* CONFIG.DEFAULT.TIMEZONE = 'GMT+2';
+* CONFIG.DEFAULT.DATEFORMAT = 'yyyy-MM-dd';
+* CONFIG.DEFAULT.TIMEFORMAT = 'HH:mm:ss';
 
 #### Change Workflows
 Planning sheet (name, background color, font color):
-CONFIG.DEFAULT.VALIDATION_PRIO = [['Low','#d9ead3','#000000'], ['Medium','#b6d7a8','#000000'], ['High','#93c47d','#000000'], ['Highest','#6aa850','#000000']];
-CONFIG.DEFAULT.VALIDATION_EFFORT = [['S','#fff2ce','#000000'], ['M','#ffe599','#000000'], ['L','#ffd966','#000000'], ['XL','#f9c232','#000000']];
-CONFIG.DEFAULT.VALIDATION_STATUS = [['Open',null,null], ['In progress','#fbbc04','#000000'], ['Fixed','#34a853','#ffffff'], ['Won\'t fix','#ea4336','#ffffff']];
+* CONFIG.DEFAULT.VALIDATION_PRIO = [['Low','#d9ead3','#000000'], ['Medium','#b6d7a8','#000000'], ['High','#93c47d','#000000'], ['Highest','#6aa850','#000000']];
+* CONFIG.DEFAULT.VALIDATION_EFFORT = [['S','#fff2ce','#000000'], ['M','#ffe599','#000000'], ['L','#ffd966','#000000'], ['XL','#f9c232','#000000']];
+* CONFIG.DEFAULT.VALIDATION_STATUS = [['Open',null,null], ['In progress','#fbbc04','#000000'], ['Fixed','#34a853','#ffffff'], ['Won\'t fix','#ea4336','#ffffff']];
 
 Audit (name, background color, font color):
-CONFIG.DEFAULT.VALIDATION_AUDIT_STATUS = [['Not started','#ea4336','#ffffff'], ['In progress','#fbbc04','#000000'], ['Done','#34a853','#ffffff']];
+* CONFIG.DEFAULT.VALIDATION_AUDIT_STATUS = [['Not started','#ea4336','#ffffff'], ['In progress','#fbbc04','#000000'], ['Done','#34a853','#ffffff']];
 
 #### Change Checklist
-CONFIG.CHECKLIST - be careful to keep the arry structure in tact - Section / Sub Section / Checklist Item
+* CONFIG.CHECKLIST - be careful to keep the arry structure in tact - Section / Sub Section / Checklist Item
 
 
