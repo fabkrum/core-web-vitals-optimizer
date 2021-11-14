@@ -89,6 +89,9 @@ Menu: Core Web Vitals Organizer → Origins → Toggle detail
 
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
 
+![CleanShot 2021-11-14 at 19 15 05](https://user-images.githubusercontent.com/21277749/141693279-c6a32d50-1f7e-443f-a32c-8c55229949e5.png)
+
+
 ### 2. Page Groups
 
 #### Create Page Groups
@@ -120,10 +123,14 @@ This is much faster then checking the complete sitemap.xml.
 If you have the auto function activated you get the newest data automatically.
 If the excecution time excecutes before all pages are updated the scripts automatically starts over and contuines the work until it is done.
 
+![CleanShot 2021-11-14 at 19 17 06](https://user-images.githubusercontent.com/21277749/141693340-fd407776-dc49-4a13-a44a-14d98a30dba6.png)
+
 #### Toggle detail
 Menu: Core Web Vitals Organizer → Pages → Toggle detail
 
 Changes the level of details shown on the sheet. This might be handy for making screenshots.
+
+![CleanShot 2021-11-14 at 19 17 42](https://user-images.githubusercontent.com/21277749/141693356-1b7b54e3-6deb-40de-bd8f-8b9a040a6f80.png)
 
 #### Delete cached URLs
 Menu: Core Web Vitals Organizer → Pages → Delete cached URLs
@@ -138,6 +145,8 @@ Menu: Core Web Vitals Organizer → Pages → Create page data importer sheet
 
 This creates a sheet with three columns: URL, page views and page types.
 If you can export this data from your analytics tool you can copy&paste it here.
+
+![CleanShot 2021-11-14 at 19 18 41](https://user-images.githubusercontent.com/21277749/141693395-3b57d51a-ed7f-4e25-8c31-2eef8fbd22a5.png)
 
 #### Import data
 Menu: Core Web Vitals Organizer → Pages → Import pages views and page types
@@ -170,6 +179,11 @@ Menu: Core Web Vitals Organizer → Audits → Show completed audit sheets
 
 If you set the status in an Audit sheet to "done" the audit sheet gets automatically hidden. If you want to check completed audit sheets again, you can make them visible all at once (you can also use the Google Sheet functionality to show/hide single audit sheets)
 
+#### Audit Overview
+
+The Audit Overview sheet shows the status of all audits at a glance:
+![CleanShot 2021-11-14 at 19 49 28](https://user-images.githubusercontent.com/21277749/141694394-4b9ec7de-1634-46a9-927c-9eba600bd016.png)
+
 ### 6. Planning
 
 #### Show planning sheet
@@ -184,6 +198,8 @@ The planning sheet gives you a nice overview of all the audit outcomes:
 * Prioritize the task
 * Link to a ticket to track the progress
 
+![CleanShot 2021-11-14 at 19 51 59](https://user-images.githubusercontent.com/21277749/141694455-3921abe4-74f9-4318-a154-44485fbf5228.png)
+
 ### 7. Trends
 
 #### Create Trend Sheets
@@ -194,6 +210,8 @@ You get two different chart types for each Core Web Vital metric.
 It is recommended to activate the daily CrUX updates.
 
 A special thanks to Barry Polland (@tunetheweb) who shared his charts with me.
+
+![CleanShot 2021-11-14 at 19 13 53](https://user-images.githubusercontent.com/21277749/141693254-dfdf2dfa-d44b-4a30-86f5-86a4caac4573.png)
 
 
 ### Webpagetest.org integration (paid WPT API key needed) – work in progress
